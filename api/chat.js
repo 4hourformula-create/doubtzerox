@@ -1,44 +1,56 @@
 export default async function handler(req, res) {
+
   try {
+
+    const userMessage = req.body.message;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           contents: [
             {
+              role: "user",
               parts: [
                 {
-                  text: req.body.message,
-                },
-              ],
-            },
-          ],
-        }),
+                  text: userMessage
+                }
+              ]
+            }
+          ]
+        })
       }
     );
 
     const data = await response.json();
 
-    console.log(data);
+    console.log(JSON.stringify(data));
 
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Something went wrong.";
+    if (data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0]) {
 
-    res.status(200).json({
-      reply,
+      return res.status(200).json({
+        reply: data.candidates[0].content.parts[0].text
+      });
+
+    }
+
+    return res.status(200).json({
+      reply: "AI could not generate a response."
     });
 
   } catch (error) {
 
-    res.status(500).json({
+    return res.status(500).json({
       reply: "Server error.",
-      error: error.message,
+      error: error.message
     });
 
   }
