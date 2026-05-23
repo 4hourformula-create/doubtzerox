@@ -508,22 +508,44 @@ function applyMode() {
 // ══════════════════════════════════════════════════════════════
 async function callClaude(history) {
 
-  const latestMessage =
-    history[history.length - 1]?.content || "";
+  try {
 
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      message: SYSTEM_PROMPT + "\n\nUser: " + latestMessage
-    })
-  });
+    const formattedConversation = history
+      .map(msg => {
+        return `${msg.role === 'assistant' ? 'AI' : 'User'}: ${msg.content}`;
+      })
+      .join('\n');
 
-  const data = await res.json();
+    const finalPrompt = `
+${SYSTEM_PROMPT}
 
-  return data.reply || "No response.";
+Conversation so far:
+
+${formattedConversation}
+
+Respond naturally based on the ongoing conversation.
+Do NOT restart the conversation.
+`;
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: finalPrompt
+      })
+    });
+
+    const data = await res.json();
+
+    return data.reply || "Something went wrong.";
+
+  } catch (e) {
+
+    return "Connection issue.";
+
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
