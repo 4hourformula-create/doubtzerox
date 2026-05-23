@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#080604"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>DoubtZero X</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #c9a84c;
+    --gold2: #8b5e10;
+    --gold-dim: rgba(201,168,76,0.15);
+    --bg: #080604;
+    --bg2: rgba(8,6,4,0.97);
+    --text: #e8dcc8;
+    --muted: #7a6030;
+    --blue: #7ec8e3;
+    --red: #e05a4a;
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, 'Times New Roman', serif;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Keyframes ── */
+  @keyframes dzPulse    { 0%,100%{opacity:.06} 50%{opacity:.14} }
+  @keyframes dzShimmer  { 0%{background-position:-200% center} 100%{background-position:200% center} }
+  @keyframes dzRing     { 0%{box-shadow:0 0 0 0 rgba(201,168,76,.5)} 70%{box-shadow:0 0 0 18px rgba(201,168,76,0)} 100%{box-shadow:0 0 0 0 rgba(201,168,76,0)} }
+  @keyframes dzFadeUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes dzFade     { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes dzBounce   { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-5px);opacity:1} }
+  @keyframes dzWave     { 0%,100%{height:4px} 50%{height:22px} }
+  @keyframes dzMicPulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.7),0 0 24px rgba(201,168,76,.3)} 50%{box-shadow:0 0 0 14px rgba(201,168,76,0),0 0 24px rgba(201,168,76,.3)} }
+  @keyframes dzSpeakPulse { 0%,100%{box-shadow:0 0 0 0 rgba(126,200,227,.5)} 50%{box-shadow:0 0 0 12px rgba(126,200,227,0)} }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
+
+  /* ── Screens ── */
+  #splash, #chat { position: fixed; inset: 0; transition: opacity .4s ease, transform .4s ease; }
+  #splash { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; overflow: hidden; }
+  #splash.hidden { opacity: 0; pointer-events: none; transform: scale(.96); }
+
+  #chat { display: flex; flex-direction: column; opacity: 0; pointer-events: none; transform: scale(1.02); }
+  #chat.visible { opacity: 1; pointer-events: all; transform: scale(1); }
+
+  /* ── Grid bg ── */
+  .grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px), linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px);
+    background-size: 48px 48px;
+    animation: dzPulse 4s ease infinite;
+  }
+  .glow-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(201,168,76,.07) 0%, transparent 65%);
+  }
+
+  /* ── Splash content ── */
+  .splash-inner { position: relative; text-align: center; max-width: 480px; width: 100%; animation: dzFadeUp .7s ease; }
+
+  .logo-mark {
+    width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 24px;
+    background: linear-gradient(135deg, var(--gold), #5a3800);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; animation: dzRing 2.5s infinite;
+    box-shadow: 0 0 40px rgba(201,168,76,.25);
+  }
+
+  .eyebrow {
+    font-size: 10px; letter-spacing: 8px; color: var(--gold);
+    text-transform: uppercase; margin-bottom: 14px; opacity: .7;
+  }
+
+  .logo-text {
+    font-size: clamp(36px,10vw,58px); font-weight: 800; letter-spacing: -1px;
+    background: linear-gradient(90deg, var(--gold), #f5d878, var(--gold));
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: dzShimmer 3s linear infinite;
+    margin-bottom: 4px;
+  }
+
+  .tagline { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 14px 0 28px; }
+
+  /* ── Mode toggle ── */
+  .mode-toggle { display: flex; gap: 10px; justify-content: center; margin-bottom: 28px; }
+  .mode-btn {
+    padding: 10px 24px; border-radius: 50px; font-family: Georgia, serif;
+    font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: .5px;
+    transition: all .2s; border: 1px solid rgba(201,168,76,.2);
+    background: transparent; color: var(--muted);
+  }
+  .mode-btn.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: var(--bg); border-color: transparent;
+    box-shadow: 0 4px 20px rgba(201,168,76,.3);
+  }
+
+  /* ── CTA button ── */
+  .cta-btn {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: var(--bg); border: none; border-radius: 50px;
+    padding: 14px 44px; font-size: 15px; font-family: Georgia, serif;
+    font-weight: 700; cursor: pointer; letter-spacing: .5px;
+    box-shadow: 0 6px 28px rgba(201,168,76,.35);
+    transition: transform .2s, box-shadow .2s;
+    -webkit-appearance: none;
+  }
+  .cta-btn:active { transform: scale(.97); }
+
+  .fine-print { color: #2e2510; font-size: 11px; margin-top: 18px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  /* ── Chat: Header ── */
+  #header {
+    padding: 11px 16px; border-bottom: 1px solid rgba(201,168,76,.1);
+    display: flex; align-items: center; gap: 12;
+    background: var(--bg2); backdrop-filter: blur(8px);
+    flex-shrink: 0; z-index: 10;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gold), #5a3800);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; box-shadow: 0 0 12px rgba(201,168,76,.3);
+  }
+
+  .header-name { color: #f0e6cc; font-weight: 700; font-size: 14px; letter-spacing: .3px; }
+  .header-status { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; transition: color .3s; }
+
+  /* Header mode toggle */
+  .header-mode {
+    margin-left: auto; display: flex;
+    background: rgba(255,255,255,.04); border-radius: 50px;
+    padding: 3px; gap: 2px; border: 1px solid rgba(201,168,76,.1);
+  }
+  .hm-btn {
+    padding: 5px 12px; border-radius: 50px; font-family: Georgia, serif;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    transition: all .2s; border: none; background: transparent;
+    color: #5a4820; letter-spacing: .5px;
+  }
+  .hm-btn.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: var(--bg);
+  }
+
+  /* ── Messages ── */
+  #messages {
+    flex: 1; overflow-y: auto; padding: 18px 14px;
+    max-width: 680px; width: 100%; margin: 0 auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bubble-row {
+    display: flex; margin-bottom: 13px;
+    animation: dzFade .35s ease forwards;
+  }
+  .bubble-row.user { justify-content: flex-end; padding-left: 48px; }
+  .bubble-row.bot  { justify-content: flex-start; padding-right: 48px; }
+
+  .bub-avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gold), #7a4f0a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; margin-right: 8px; margin-top: 2px;
+    box-shadow: 0 0 10px rgba(201,168,76,.35);
+  }
+
+  .bubble {
+    padding: 10px 14px; font-size: 14px; line-height: 1.65;
+    white-space: pre-wrap; max-width: 100%; letter-spacing: .1px;
+    word-break: break-word;
+  }
+  .bubble.user {
+    background: linear-gradient(135deg, var(--gold), #9a6510);
+    border-radius: 18px 18px 4px 18px; color: #0d0a04;
+    box-shadow: 0 3px 16px rgba(201,168,76,.2);
+  }
+  .bubble.bot {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(201,168,76,.13);
+    border-radius: 18px 18px 18px 4px; color: var(--text);
+  }
+
+  /* Typing dots */
+  .typing-dots { display: flex; gap: 5px; padding: 10px 14px; align-items: center; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); opacity: .5;
+  }
+  .dot:nth-child(1){ animation: dzBounce 1.1s 0s   infinite ease-in-out; }
+  .dot:nth-child(2){ animation: dzBounce 1.1s .18s  infinite ease-in-out; }
+  .dot:nth-child(3){ animation: dzBounce 1.1s .36s  infinite ease-in-out; }
+
+  /* Chips */
+  #chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; padding-left: 38px; animation: dzFade .5s .2s both ease; }
+  .chip {
+    background: transparent; border: 1px solid rgba(201,168,76,.25);
+    border-radius: 50px; padding: 6px 13px; color: var(--gold);
+    font-size: 12px; font-family: Georgia, serif; cursor: pointer;
+    transition: all .18s; line-height: 1.4; -webkit-appearance: none;
+  }
+  .chip:active { background: rgba(201,168,76,.15); }
+
+  /* ── Input area ── */
+  #input-area {
+    border-top: 1px solid rgba(201,168,76,.1);
+    background: var(--bg2); backdrop-filter: blur(8px);
+    flex-shrink: 0; padding: 12px 14px 14px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .text-row { max-width: 680px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
+
+  textarea#msg {
+    flex: 1; background: rgba(255,255,255,.04);
+    border: 1px solid rgba(201,168,76,.18); border-radius: 14px;
+    padding: 10px 14px; color: var(--text); font-size: 15px;
+    font-family: Georgia, serif; line-height: 1.6;
+    max-height: 120px; overflow-y: auto; resize: none; outline: none;
+    transition: border-color .2s; -webkit-appearance: none;
+  }
+  textarea#msg:focus { border-color: rgba(201,168,76,.45); }
+  textarea#msg::placeholder { color: #3a2e14; }
+
+  .send-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0; cursor: pointer;
+    transition: all .2s; -webkit-appearance: none;
+  }
+  .send-btn.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: var(--bg); box-shadow: 0 3px 14px rgba(201,168,76,.3);
+  }
+  .send-btn.inactive { background: rgba(255,255,255,.04); color: #444; cursor: not-allowed; }
+
+  .hint { text-align: center; color: #1e1a0e; font-size: 10px; margin-top: 7px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  /* ── Voice area ── */
+  #voice-area {
+    max-width: 680px; margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center; gap: 11px;
+  }
+
+  #transcript-box {
+    background: rgba(201,168,76,.06); border: 1px solid rgba(201,168,76,.15);
+    border-radius: 12px; padding: 8px 16px; color: var(--gold);
+    font-size: 13px; font-style: italic; text-align: center;
+    max-width: 440px; width: 100%; animation: dzFade .2s ease;
+    min-height: 36px; display: flex; align-items: center; justify-content: center;
+  }
+
+  .wave-row { display: flex; align-items: center; gap: 8px; }
+  .wave-bars { display: flex; align-items: center; gap: 3px; height: 28px; }
+  .bar {
+    width: 3px; border-radius: 3px; background: var(--gold);
+    animation: dzWave .8s infinite ease-in-out;
+    min-height: 4px;
+  }
+  .bar:nth-child(1){ animation-delay: 0s; }
+  .bar:nth-child(2){ animation-delay: .12s; }
+  .bar:nth-child(3){ animation-delay: .24s; }
+  .bar:nth-child(4){ animation-delay: .36s; }
+  .bar:nth-child(5){ animation-delay: .48s; }
+
+  .speak-label { color: var(--blue); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+
+  .voice-controls { display: flex; gap: 16px; align-items: center; }
+
+  #mic-btn {
+    width: 68px; height: 68px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; cursor: pointer; transition: all .25s;
+    -webkit-appearance: none;
+  }
+  #mic-btn.idle {
+    background: linear-gradient(135deg, var(--gold), #7a4f0a);
+    color: var(--bg); box-shadow: 0 4px 20px rgba(201,168,76,.35);
+  }
+  #mic-btn.listening {
+    background: linear-gradient(135deg, var(--red), #a03020);
+    color: #fff; animation: dzMicPulse 1.2s infinite;
+  }
+  #mic-btn.disabled { background: rgba(255,255,255,.04); color: #444; cursor: not-allowed; }
+
+  #stop-speak-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid rgba(126,200,227,.3);
+    background: rgba(126,200,227,.08); color: var(--blue);
+    font-size: 18px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    animation: dzSpeakPulse 1.5s infinite;
+    -webkit-appearance: none;
+  }
+
+  #voice-send-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: var(--bg); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 14px rgba(201,168,76,.3);
+    -webkit-appearance: none;
+  }
+
+  #mic-hint { color: #2e2510; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; text-align: center; }
+  #mic-error { color: var(--red); font-size: 12px; text-align: center; max-width: 340px; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SPLASH SCREEN
+══════════════════════════════════════════════════════════════ -->
+<div id="splash">
+  <div class="grid-bg"></div>
+  <div class="glow-bg"></div>
+  <div class="splash-inner">
+    <div class="logo-mark">✕</div>
+    <div class="eyebrow">Objection Eliminator</div>
+    <div class="logo-text">DoubtZero X</div>
+    <p class="tagline">Every excuse you have has a name.<br>I know all of them.</p>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="splash-text-btn" onclick="setSplashMode('text')">💬 Text Mode</button>
+      <button class="mode-btn" id="splash-voice-btn" onclick="setSplashMode('voice')">🎙️ Voice Mode</button>
+    </div>
+
+    <button class="cta-btn" onclick="beginSession()">Face Your Doubts →</button>
+    <p class="fine-print">No filters · No comfort zone</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAT SCREEN
+══════════════════════════════════════════════════════════════ -->
+<div id="chat">
+  <!-- Header -->
+  <div id="header">
+    <div class="avatar">✕</div>
+    <div>
+      <div class="header-name">DoubtZero X</div>
+      <div class="header-status" id="status-label">● Locked In</div>
+    </div>
+    <div class="header-mode">
+      <button class="hm-btn active" id="hm-text" onclick="setMode('text')">💬 Text</button>
+      <button class="hm-btn" id="hm-voice" onclick="setMode('voice')">🎙️ Voice</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="messages"></div>
+
+  <!-- Input area -->
+  <div id="input-area">
+    <!-- TEXT MODE -->
+    <div id="text-ui">
+      <div class="text-row">
+        <textarea id="msg" rows="1" placeholder="Tell me your real excuse…"></textarea>
+        <button class="send-btn inactive" id="send-btn" onclick="sendText()">→</button>
+      </div>
+      <p class="hint">Tap → to send</p>
+    </div>
+
+    <!-- VOICE MODE -->
+    <div id="voice-ui" class="hidden">
+      <div id="voice-area">
+        <div id="transcript-box" class="hidden"></div>
+        <div class="wave-row hidden" id="wave-row">
+          <div class="wave-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+          <span class="speak-label">Speaking</span>
+          <div class="wave-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+        </div>
+        <div id="mic-error" class="hidden"></div>
+        <div class="voice-controls">
+          <button id="stop-speak-btn" class="hidden" onclick="stopSpeaking()">⏹</button>
+          <button id="mic-btn" class="idle" onclick="toggleMic()">🎙️</button>
+          <button id="voice-send-btn" class="hidden" onclick="sendVoiceTranscript()">→</button>
+        </div>
+        <p id="mic-hint">Tap mic to speak your doubt</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let mode          = 'text';
+let conversationHistory = [];
+let isLoading     = false;
+let isSpeaking    = false;
+let isListening   = false;
+let currentTranscript = '';
+let recognition   = null;
+
+const SYSTEM_PROMPT = `You are DoubtZero X — a razor-sharp objection eliminator trained in behavioral psychology, sales neuroscience, and identity transformation.
+
+YOUR IDENTITY:
+You are NOT a motivational speaker. You are NOT a life coach.
+You are the world's most dangerous objection handler. You see through excuses like glass. You speak in surgical strikes, not speeches.
+
+YOUR MISSION:
+Destroy every fear, doubt, limiting belief, and mental excuse stopping professionals from starting a Plan B income stream — until they naturally ask HOW and WHEN to start.
+
+CORE RULES — NON-NEGOTIABLE:
+- Responses MUST be SHORT. Max 4-6 lines per reply. Never write paragraphs.
+- Every reply = 1 sharp insight + 1 killer analogy or line. That is it.
+- No lists. No bullet points. No headers. Pure punchy prose.
+- Be slightly provocative. Never preachy.
+- Sound like their smartest, most brutally honest friend — not a coach.
+- Each response must make them think: Damn. They got me.
+- NEVER mention the 4-Hour Plan B Program until they ask HOW to start. Then mention it naturally, once, briefly.
+- Responses will sometimes be spoken aloud — so write naturally for speech: no em-dashes, no ellipses chains, no special symbols. Use plain spoken language.
+
+CONVERSATION FLOW:
+
+TURN 1 — Open with this EXACT message (short, punchy):
+Real talk. What is the actual reason you have not started your Plan B yet?
+Not the polished version. The real one.
+Fear? Time? No idea? Or something else?
+
+TURN 2+ — For every objection they give:
+Name the real belief hiding behind it (1 line)
+Reframe it with one unforgettable analogy (1-2 lines)
+End with a short provocative question or statement that pushes them forward
+
+OBJECTION PLAYBOOK (use these styles, adapt freely):
+Too late: A tree planted yesterday is already ahead of one never planted. Late is a feeling. Done is a fact.
+No time: You have time for Netflix. You do not lack time. You lack a reason urgent enough to use it differently.
+Not skilled enough: You do not need to be an expert. You need to be one chapter ahead of someone else. That is all.
+Fear of failure: You are not afraid of failing. You are afraid of people watching you try. Those people are also watching Netflix right now.
+No confidence: Confidence does not come before action. It is the byproduct of it. You are waiting for a flight that departs after you board.
+Overthinking: You are rehearsing the movie instead of shooting the first scene. The script gets better on set.
+Fear of judgment: The people judging you are also one paycheck away from panic. Their opinion is not a currency you can spend.
+AI will replace me: AI replaces people who wait. It rewards people who adapt. Which one are you choosing to be?
+Not consistent: You do not brush teeth when motivated. You brush because it is identity. Consistency is not discipline. It is design.
+Need more learning: More information before action is procrastination wearing glasses.
+
+ENDGAME:
+When you sense their resistance crumbling — or they have shared 2-3 objections — pivot with:
+So here is the real question: what would it take for you to say yes to yourself — just 4 hours a week?
+
+Once they show openness or ask how to start, briefly mention the 4-Hour Plan B Program as a natural next step. One line. No pitch. Then ask when they want to begin.`;
+
+const QUICK_REPLIES = [
+  'I feel too late already',
+  'No time after work',
+  "I don't know what skill to monetize",
+  'Afraid of public failure',
+  'I overthink everything',
+  'I keep learning but never start',
+];
+
+// ══════════════════════════════════════════════════════════════
+// SPLASH
+// ══════════════════════════════════════════════════════════════
+function setSplashMode(m) {
+  mode = m;
+  document.getElementById('splash-text-btn').className  = 'mode-btn' + (m==='text'?' active':'');
+  document.getElementById('splash-voice-btn').className = 'mode-btn' + (m==='voice'?' active':'');
+}
+
+async function beginSession() {
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('chat').classList.add('visible');
+  applyMode();
+  await sendMessage('Hi');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODE
+// ══════════════════════════════════════════════════════════════
+function setMode(m) {
+  stopSpeaking();
+  stopMic();
+  mode = m;
+  applyMode();
+}
+
+function applyMode() {
+  document.getElementById('hm-text').className  = 'hm-btn' + (mode==='text'?' active':'');
+  document.getElementById('hm-voice').className = 'hm-btn' + (mode==='voice'?' active':'');
+  document.getElementById('text-ui').classList.toggle('hidden', mode !== 'text');
+  document.getElementById('voice-ui').classList.toggle('hidden', mode !== 'voice');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLAUDE API
+// ══════════════════════════════════════════════════════════════
+async function callClaude(history) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 300,
+      system: SYSTEM_PROMPT,
+      messages: history,
+    }),
+  });
+  const data = await res.json();
+  return (data.content || []).map(b => b.text || '').join('') || '…';
+}
+
+// ══════════════════════════════════════════════════════════════
+// SEND MESSAGE
+// ══════════════════════════════════════════════════════════════
+async function sendMessage(text) {
+  const t = text.trim();
+  if (!t || isLoading) return;
+
+  if (t !== 'Hi') addBubble('user', t);
+
+  const userMsg = { role: 'user', content: t };
+  conversationHistory.push(userMsg);
+
+  setLoading(true);
+  hideChips();
+
+  try {
+    const reply = await callClaude(conversationHistory);
+    conversationHistory.push({ role: 'assistant', content: reply });
+    addBubble('bot', reply);
+    setLoading(false);
+
+    if (mode === 'voice') {
+      speakText(reply);
+    }
+
+    // Show chips after first bot reply
+    if (conversationHistory.length === 2) showChips();
+  } catch(e) {
+    setLoading(false);
+    addBubble('bot', 'Connection issue. Please try again.');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DOM HELPERS
+// ══════════════════════════════════════════════════════════════
+function addBubble(role, text) {
+  const msgs = document.getElementById('messages');
+
+  // Remove typing indicator if present
+  const typing = document.getElementById('typing-indicator');
+  if (typing) typing.remove();
+
+  const row = document.createElement('div');
+  row.className = 'bubble-row ' + role;
+
+  if (role === 'bot') {
+    const av = document.createElement('div');
+    av.className = 'bub-avatar'; av.textContent = '✕';
+    row.appendChild(av);
+  }
+
+  const bub = document.createElement('div');
+  bub.className = 'bubble ' + role;
+  bub.textContent = text;
+  row.appendChild(bub);
+
+  msgs.appendChild(row);
+  scrollBottom();
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.id = 'typing-indicator';
+  row.className = 'bubble-row bot';
+  row.style.animation = 'dzFade .3s ease';
+
+  const av = document.createElement('div');
+  av.className = 'bub-avatar'; av.textContent = '✕';
+  row.appendChild(av);
+
+  const bub = document.createElement('div');
+  bub.className = 'bubble bot';
+  bub.innerHTML = '<div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  row.appendChild(bub);
+
+  msgs.appendChild(row);
+  scrollBottom();
+}
+
+function setLoading(v) {
+  isLoading = v;
+  if (v) {
+    showTyping();
+    setStatus('Thinking…', '#c9a84c');
+  } else {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+    updateStatusIdle();
+  }
+  updateSendBtn();
+}
+
+function setStatus(label, color) {
+  const el = document.getElementById('status-label');
+  el.textContent = label;
+  el.style.color = color;
+}
+
+function updateStatusIdle() {
+  if (isSpeaking)       setStatus('Speaking…',  '#7ec8e3');
+  else if (isListening) setStatus('Listening…', '#c9a84c');
+  else                  setStatus('● Locked In','#4a7c3f');
+}
+
+function scrollBottom() {
+  const msgs = document.getElementById('messages');
+  setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+}
+
+function showChips() {
+  let chips = document.getElementById('chips');
+  if (chips) { chips.classList.remove('hidden'); return; }
+  chips = document.createElement('div');
+  chips.id = 'chips';
+  QUICK_REPLIES.forEach(qr => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = qr;
+    btn.onclick = () => { hideChips(); sendMessage(qr); };
+    chips.appendChild(btn);
+  });
+  document.getElementById('messages').appendChild(chips);
+  scrollBottom();
+}
+
+function hideChips() {
+  const c = document.getElementById('chips');
+  if (c) c.classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TEXT INPUT
+// ══════════════════════════════════════════════════════════════
+const msgArea = document.getElementById('msg');
+const sendBtn = document.getElementById('send-btn');
+
+msgArea.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  updateSendBtn();
+});
+
+msgArea.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); }
+});
+
+function updateSendBtn() {
+  const active = msgArea.value.trim() && !isLoading;
+  sendBtn.className = 'send-btn ' + (active ? 'active' : 'inactive');
+}
+
+function sendText() {
+  const t = msgArea.value.trim();
+  if (!t || isLoading) return;
+  msgArea.value = '';
+  msgArea.style.height = 'auto';
+  updateSendBtn();
+  sendMessage(t);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SPEECH SYNTHESIS (TTS)
+// ══════════════════════════════════════════════════════════════
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const utt = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => /daniel|alex|google uk|oliver|en-gb/i.test(v.name + v.lang))
+                 || voices.find(v => /en/i.test(v.lang))
+                 || voices[0];
+  if (preferred) utt.voice = preferred;
+  utt.rate = 0.92; utt.pitch = 0.88; utt.volume = 1;
+
+  utt.onstart = () => {
+    isSpeaking = true;
+    document.getElementById('wave-row').classList.remove('hidden');
+    document.getElementById('stop-speak-btn').classList.remove('hidden');
+    document.getElementById('mic-btn').className = 'disabled';
+    setStatus('Speaking…', '#7ec8e3');
+  };
+  utt.onend = utt.onerror = () => {
+    isSpeaking = false;
+    document.getElementById('wave-row').classList.add('hidden');
+    document.getElementById('stop-speak-btn').classList.add('hidden');
+    document.getElementById('mic-btn').className = isLoading ? 'disabled' : 'idle';
+    updateStatusIdle();
+  };
+
+  // Android Chrome workaround: voices may not be loaded yet
+  if (voices.length === 0) {
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.speak(utt);
+  } else {
+    window.speechSynthesis.speak(utt);
+  }
+}
+
+function stopSpeaking() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  isSpeaking = false;
+  document.getElementById('wave-row').classList.add('hidden');
+  document.getElementById('stop-speak-btn').classList.add('hidden');
+  document.getElementById('mic-btn').className = isLoading ? 'disabled' : 'idle';
+  updateStatusIdle();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SPEECH RECOGNITION (STT)
+// ══════════════════════════════════════════════════════════════
+function toggleMic() {
+  if (isListening) stopMic();
+  else startMic();
+}
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showMicError('Voice input not supported on this browser. Try Chrome.');
+    return;
+  }
+  hideMicError();
+  stopSpeaking();
+  currentTranscript = '';
+
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('mic-btn').className = 'listening';
+    document.getElementById('mic-btn').textContent = '⏹';
+    document.getElementById('transcript-box').classList.remove('hidden');
+    document.getElementById('transcript-box').textContent = 'Listening…';
+    document.getElementById('voice-send-btn').classList.add('hidden');
+    document.getElementById('mic-hint').textContent = 'Tap ⏹ to stop & send';
+    setStatus('Listening…', '#c9a84c');
+  };
+
+  recognition.onresult = (e) => {
+    currentTranscript = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById('transcript-box').textContent = currentTranscript || 'Listening…';
+  };
+
+  recognition.onerror = (e) => {
+    stopMic();
+    if (e.error === 'not-allowed') showMicError('Microphone access denied. Enable it in your browser settings.');
+    else if (e.error === 'network')    showMicError('Network error. Check your connection.');
+    else showMicError('Voice error: ' + e.error);
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('mic-btn').className = isLoading ? 'disabled' : 'idle';
+    document.getElementById('mic-btn').textContent = '🎙️';
+    document.getElementById('mic-hint').textContent = 'Tap mic to speak your doubt';
+    updateStatusIdle();
+
+    const t = currentTranscript.trim();
+    if (t) {
+      // Auto-send after short delay
+      setTimeout(() => {
+        document.getElementById('transcript-box').classList.add('hidden');
+        document.getElementById('voice-send-btn').classList.add('hidden');
+        sendMessage(t);
+        currentTranscript = '';
+      }, 400);
+    } else {
+      document.getElementById('transcript-box').classList.add('hidden');
+    }
+  };
+
+  try { recognition.start(); }
+  catch(e) { showMicError('Could not start mic: ' + e.message); }
+}
+
+function stopMic() {
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  isListening = false;
+  document.getElementById('mic-btn').className = isLoading ? 'disabled' : 'idle';
+  document.getElementById('mic-btn').textContent = '🎙️';
+  document.getElementById('mic-hint').textContent = 'Tap mic to speak your doubt';
+  updateStatusIdle();
+
+  // Show manual send if there's a transcript
+  if (currentTranscript.trim()) {
+    document.getElementById('voice-send-btn').classList.remove('hidden');
+  }
+}
+
+function sendVoiceTranscript() {
+  const t = currentTranscript.trim();
+  if (!t) return;
+  document.getElementById('transcript-box').classList.add('hidden');
+  document.getElementById('voice-send-btn').classList.add('hidden');
+  currentTranscript = '';
+  sendMessage(t);
+}
+
+function showMicError(msg) {
+  const el = document.getElementById('mic-error');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideMicError() {
+  document.getElementById('mic-error').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT — Pre-load voices on page load
+// ══════════════════════════════════════════════════════════════
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+// Prevent iOS rubber-band scroll
+document.body.addEventListener('touchmove', e => { if (e.target === document.body) e.preventDefault(); }, { passive: false });
+</script>
+</body>
+</html>
