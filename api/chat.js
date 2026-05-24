@@ -58,35 +58,64 @@ So here is the real question: what would it take for you to say yes to yourself 
       parts: [{ text: msg.content }]
     }));
 
-    const response = await fetch(
-     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: geminiContents,
-          // Explicitly turn off default safety blocks for this specific use case
-          safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-          ]
-        })
+    const payload = {
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: geminiContents,
+      // Explicitly turn off default safety blocks for this specific use case
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+      ]
+    };
+
+    // --- RETRY LOGIC ENGINE ---
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+    let response;
+    let data;
+
+    while (attempt < MAX_RETRIES) {
+      // Pointed explicitly to the deeper reasoning Gemini 2.5 Pro model
+      response = await fetch(
+       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      data = await response.json();
+
+      // If Google's servers are busy (503) or rate-limited (429), pause and retry
+      if (response.status === 503 || response.status === 429) {
+        attempt++;
+        console.warn(`Gemini API busy (Attempt ${attempt}/${MAX_RETRIES}). Retrying in 2 seconds...`);
+        
+        if (attempt >= MAX_RETRIES) break; // Give up after 3 tries
+        
+        // Wait exactly 2000 milliseconds (2 seconds) before the next loop
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
       }
-    );
 
-    const data = await response.json();
+      // If it's a successful response (or a permanent error like a bad API key), break the loop
+      break;
+    }
 
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]) {
+    // --- RESPONSE HANDLING ---
+    if (response.ok && data.candidates && data.candidates[0]?.content?.parts?.[0]) {
       return res.status(200).json({
         reply: data.candidates[0].content.parts[0].text
       });
     }
 
     console.error("Gemini Error:", JSON.stringify(data));
-    return res.status(500).json({ reply: "AI could not generate a response at this moment. Contact 4hourfff@gmail.com if this persists." });
+    
+    // On-brand fallback message if all retries fail
+    return res.status(500).json({ reply: "I am analyzing too many excuses right now. Take a breath and tap send again in 10 seconds." });
 
   } catch (error) {
     console.error("Backend Error:", error);
