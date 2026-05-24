@@ -70,15 +70,15 @@ So here is the real question: what would it take for you to say yes to yourself 
       ]
     };
 
-    // --- RETRY LOGIC ENGINE ---
-    const MAX_RETRIES = 3;
+    // --- EXPONENTIAL BACKOFF RETRY LOGIC ---
+    const MAX_RETRIES = 4; // This will trigger delays of 1s, 2s, 4s, and 8s
     let attempt = 0;
     let response;
     let data;
 
-    while (attempt < MAX_RETRIES) {
-      // Pointed explicitly to the deeper reasoning Gemini 2.5 Pro model
-        response = await fetch(
+    while (attempt <= MAX_RETRIES) {
+      // Pointed to the faster, highly reliable Gemini 2.5 Flash model
+      response = await fetch(
        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           method: "POST",
@@ -89,15 +89,21 @@ So here is the real question: what would it take for you to say yes to yourself 
 
       data = await response.json();
 
-      // If Google's servers are busy (503) or rate-limited (429), pause and retry
-      if (response.status === 503 || response.status === 429) {
+      // If Google's servers are rate-limited (429) or busy (503), apply exponential backoff
+      if (response.status === 429 || response.status === 503) {
+        if (attempt === MAX_RETRIES) {
+          console.error("Max retries reached. Giving up.");
+          break; // Exit the loop if we've exhausted our retries
+        }
+        
+        // Calculate the delay using powers of 2: 2^0=1s, 2^1=2s, 2^2=4s, 2^3=8s
+        const delayInSeconds = Math.pow(2, attempt);
+        console.warn(`API Rate Limit hit (429/503). Retrying in ${delayInSeconds} seconds...`);
+        
+        // Pause execution for the calculated duration
+        await new Promise(resolve => setTimeout(resolve, delayInSeconds * 1000));
+        
         attempt++;
-        console.warn(`Gemini API busy (Attempt ${attempt}/${MAX_RETRIES}). Retrying in 2 seconds...`);
-        
-        if (attempt >= MAX_RETRIES) break; // Give up after 3 tries
-        
-        // Wait exactly 2000 milliseconds (2 seconds) before the next loop
-        await new Promise(resolve => setTimeout(resolve, 2000));
         continue;
       }
 
@@ -114,8 +120,8 @@ So here is the real question: what would it take for you to say yes to yourself 
 
     console.error("Gemini Error:", JSON.stringify(data));
     
-    // On-brand fallback message if all retries fail
-  return res.status(500).json({ reply: "SYSTEM ERROR LOG: " + (data?.error?.message || "Unknown Error. Check Vercel Logs.") });
+    // Fallback diagnostic message so you can see exactly what went wrong if it completely fails
+    return res.status(500).json({ reply: "SYSTEM ERROR LOG: " + (data?.error?.message || "Unknown Error. Check Vercel Logs.") });
 
   } catch (error) {
     console.error("Backend Error:", error);
