@@ -121,7 +121,7 @@ So here is the real question: what would it take for you to say yes to yourself 
     console.error("Gemini Error:", JSON.stringify(data));
     
     // Fallback diagnostic message so you can see exactly what went wrong if it completely fails
-    return res.status(500).json({ reply: "SYSTEM ERROR LOG: " + (data?.error?.message || "Unknown Error. Check Vercel Logs.") });
+    return res.status(500).json({ reply: "I am analyzing too many requests right now. Take a breath and tap send again in 30-60 seconds." });
 
   } catch (error) {
     console.error("Backend Error:", error);
