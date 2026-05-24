@@ -115,7 +115,7 @@ So here is the real question: what would it take for you to say yes to yourself 
     console.error("Gemini Error:", JSON.stringify(data));
     
     // On-brand fallback message if all retries fail
-    return res.status(500).json({ reply: "I am analyzing too many excuses right now. Take a breath and tap send again in 10 seconds." });
+  return res.status(500).json({ reply: "SYSTEM ERROR LOG: " + (data?.error?.message || "Unknown Error. Check Vercel Logs.") });
 
   } catch (error) {
     console.error("Backend Error:", error);
