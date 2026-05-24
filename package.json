@@ -1,0 +1,13 @@
+{
+  "name": "doubtzero-x",
+  "version": "1.0.0",
+  "description": "Objection Eliminator AI powered by Gemini",
+  "main": "index.html",
+  "scripts": {
+    "start": "node"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.x"
+  }
+}
